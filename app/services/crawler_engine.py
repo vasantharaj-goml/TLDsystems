@@ -8,9 +8,20 @@ if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
-from app.services.content_cleaner import calculate_sha256, format_to_clean_markdown, classify_links, is_pdf_url
+from app.services.content_cleaner import (
+    calculate_sha256,
+    format_to_clean_markdown,
+    format_to_structured_txt,
+    normalize_url,
+    classify_links,
+    is_pdf_url,
+    classify_page,
+    calculate_crawl_priority
+)
 from app.services.pdf_processor import download_and_extract_pdf
 from app.services.file_storage import save_crawl_results
+from app.schemas.discovery import CandidateURLRecord, RelevanceClassificationEnum, PageClassificationEnum, CrawlPriorityEnum
+from app.services.grok_relevance_evaluator import GrokRelevanceEvaluator
 from app.utils.logger import logger
 
 
@@ -108,22 +119,39 @@ async def _crawl_html_pages(
     follow_links: bool,
     allowed_domains: List[str],
     source_name: str,
+    source_id: str,
+    jurisdiction_str: str,
+    crawled_at: str,
     crawl_config: CrawlerRunConfig,
     crawl_settings: Dict[str, Any] = None
-) -> Tuple[List[Dict[str, Any]], Set[str], bool, str]:
+) -> Tuple[List[Dict[str, Any]], Set[str], List[Dict[str, Any]], bool, str]:
     """
-    Executes Breadth-First Search (BFS) for HTML pages up to max_depth.
-    Returns: (scraped_documents, discovered_pdf_urls, success, error_message)
+    Executes Priority-guided Breadth-First Search for HTML pages up to max_depth.
+    Traverses REGULATORY_DISCOVERY and REGULATORY_SOURCE index pages to reach ACTUAL_REGULATION text.
+    Only expands child links for RELEVANT pages or REGULATORY_DISCOVERY/SOURCE index pages.
+    Deduplicates URLs using normalize_url().
+    Returns: (scraped_documents, discovered_pdf_urls, review_records, success, error_message)
     """
     crawl_settings = crawl_settings or {}
     scraped_documents: List[Dict[str, Any]] = []
     visited_urls: Set[str] = set()
     discovered_pdf_urls: Set[str] = set()
-    queue: List[Tuple[str, int]] = [(target_url, 1)]
+    review_records: List[Dict[str, Any]] = []
+
+    norm_target = normalize_url(target_url)
+    # Queue item tuple: (url, depth, parent_url, priority_name)
+    queue: List[Tuple[str, int, Optional[str], str]] = [(norm_target, 1, None, "HIGH")]
+
+    evaluator = GrokRelevanceEvaluator()
 
     async with AsyncWebCrawler() as crawler:
         while queue:
-            current_url, current_depth = queue.pop(0)
+            # Sort queue by priority (HIGH -> MEDIUM -> LOW) then pop head
+            priority_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "SKIP": 3}
+            queue.sort(key=lambda item: (item[1], priority_order.get(item[3], 2)))
+
+            raw_url, current_depth, parent_url, priority = queue.pop(0)
+            current_url = normalize_url(raw_url)
 
             if current_url in visited_urls:
                 continue
@@ -155,76 +183,174 @@ async def _crawl_html_pages(
                         continue
 
                     logger.warning(f"Failed to crawl URL: {current_url}. Error: {result.error_message}")
-                    if current_url == target_url:
-                        return [], set(), False, f"Failed to fetch seed URL: {result.error_message}"
+                    if current_url == norm_target:
+                        return [], set(), [], False, f"Failed to fetch seed URL: {result.error_message}"
                     continue
 
-                formatted_md = format_to_clean_markdown(
-                    title=source_name,
+                raw_md = result.markdown or ""
+                clean_body = format_to_clean_markdown(title=source_name, url=current_url, raw_markdown=raw_md)
+
+                # Classify page structure
+                page_class = classify_page(current_url, source_name, clean_body)
+
+                # Relevance evaluation check
+                cand_record = CandidateURLRecord(
                     url=current_url,
-                    raw_markdown=result.markdown or ""
+                    source_id=source_id,
+                    depth=current_depth,
+                    parent_url=parent_url,
+                    title=source_name,
+                    page_classification=page_class
                 )
+                page_data = {"content": clean_body, "title": source_name, "content_preview": clean_body[:500]}
+                eval_res = await evaluator.evaluate(cand_record, page_data)
 
-                scraped_documents.append({
-                    "url": current_url,
-                    "depth": current_depth,
-                    "type": "html",
-                    "content": formatted_md,
-                    "content_hash": calculate_sha256(formatted_md)
-                })
+                # Extract discovered links (internal + external allowed domains)
+                raw_links = (result.links.get("internal", []) + result.links.get("external", [])) if result.links else []
+                extracted_links = [link.get("href") for link in raw_links]
+                html_links, pdf_links = classify_links(extracted_links, current_url, allowed_domains)
+                discovered_pdf_urls.update(pdf_links)
 
-                # Scenario 3 Link Discovery
-                if result.links:
-                    extracted_links = [link.get("href") for link in result.links.get("internal", [])]
-                    html_links, pdf_links = classify_links(extracted_links, current_url, allowed_domains)
-                    discovered_pdf_urls.update(pdf_links)
-
+                # Handle Discovery or Source index pages (traversal index)
+                if page_class in (PageClassificationEnum.REGULATORY_DISCOVERY, PageClassificationEnum.REGULATORY_SOURCE) or current_url == norm_target:
+                    logger.info(f"Page {current_url} is a structural {page_class.value}. Expanding regulatory child links (count={len(html_links)}).")
                     if follow_links and (current_depth < max_depth):
                         for sub_url in html_links:
-                            if sub_url not in visited_urls:
-                                queue.append((sub_url, current_depth + 1))
+                            norm_sub = normalize_url(sub_url)
+                            if norm_sub not in visited_urls:
+                                sub_prio = calculate_crawl_priority(norm_sub, "", page_class, allowed_domains)
+                                if sub_prio != CrawlPriorityEnum.SKIP:
+                                    queue.append((norm_sub, current_depth + 1, current_url, sub_prio.value))
+                    continue
+
+                # Process according to relevance verdict for non-index text pages
+                if eval_res.classification == RelevanceClassificationEnum.RELEVANT:
+                    # Build structured .txt representation
+                    structured_txt = format_to_structured_txt(
+                        source_id=source_id,
+                        jurisdiction=jurisdiction_str,
+                        url=current_url,
+                        page_title=source_name,
+                        crawled_at=crawled_at,
+                        clean_text=clean_body,
+                        discovered_links=sorted(list(html_links | pdf_links)),
+                        parent_url=parent_url,
+                        status="RELEVANT"
+                    )
+
+                    scraped_documents.append({
+                        "url": current_url,
+                        "depth": current_depth,
+                        "type": "html",
+                        "content": structured_txt,
+                        "content_hash": calculate_sha256(structured_txt)
+                    })
+
+                    # Expand links for RELEVANT pages
+                    if follow_links and (current_depth < max_depth):
+                        for sub_url in html_links:
+                            norm_sub = normalize_url(sub_url)
+                            if norm_sub not in visited_urls:
+                                sub_prio = calculate_crawl_priority(norm_sub, "", page_class, allowed_domains)
+                                if sub_prio != CrawlPriorityEnum.SKIP:
+                                    queue.append((norm_sub, current_depth + 1, current_url, sub_prio.value))
+
+                elif eval_res.classification in (RelevanceClassificationEnum.NOT_RELEVANT, RelevanceClassificationEnum.UNCERTAIN):
+                    # NOT_RELEVANT or UNCERTAIN: STOP expanding child links for this branch!
+                    logger.info(f"Page {current_url} classified as {eval_res.classification.value}. Stopping link expansion for this branch.")
+                    review_records.append({
+                        "url": current_url,
+                        "classification": eval_res.classification.value,
+                        "reason": eval_res.reason
+                    })
+                else:
+                    # EVALUATION_ERROR: Do NOT treat as NOT_RELEVANT or UNCERTAIN
+                    logger.warning(f"Grok API Evaluation error for {current_url}: {eval_res.reason}. Stopping branch expansion without marking as NOT_RELEVANT or UNCERTAIN.")
+                    review_records.append({
+                        "url": current_url,
+                        "classification": "EVALUATION_ERROR",
+                        "reason": eval_res.reason
+                    })
 
             except Exception as e:
                 logger.error(f"Error crawling {current_url}: {str(e)}")
-                if current_url == target_url:
-                    return [], set(), False, str(e)
+                if current_url == norm_target:
+                    return [], set(), [], False, str(e)
                 continue
 
-    return scraped_documents, discovered_pdf_urls, True, ""
+    return scraped_documents, discovered_pdf_urls, review_records, True, ""
 
 
 async def _process_discovered_pdfs(
     pdf_urls: Set[str], 
-    request_timeout: int
-) -> List[Dict[str, Any]]:
-    """Batch processes discovered PDF URLs into extracted markdown records."""
+    request_timeout: int,
+    source_id: str,
+    jurisdiction_str: str,
+    crawled_at: str
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    Batch processes discovered PDF URLs, evaluates text relevance using Grok/Evaluator,
+    and returns (relevant_pdf_documents, pdf_review_records).
+    """
     if not pdf_urls:
-        return []
+        return [], []
 
-    logger.info(f"Extracting {len(pdf_urls)} discovered PDFs")
+    logger.info(f"Extracting & evaluating {len(pdf_urls)} discovered PDFs")
     pdf_tasks = [download_and_extract_pdf(url, timeout=request_timeout) for url in list(pdf_urls)[:10]]
     pdf_results = await asyncio.gather(*pdf_tasks)
 
+    evaluator = GrokRelevanceEvaluator()
     pdf_documents = []
+    pdf_review_records = []
+
     for pdf_res in pdf_results:
         if pdf_res["success"] and pdf_res["text"]:
-            pdf_documents.append({
-                "url": pdf_res["url"],
-                "depth": 1,
-                "type": "pdf",
-                "page_count": pdf_res["page_count"],
-                "content": pdf_res["text"],
-                "content_hash": pdf_res["content_hash"]
-            })
+            pdf_url = normalize_url(pdf_res["url"])
+            title = f"PDF Document: {pdf_url}"
 
-    return pdf_documents
+            cand_record = CandidateURLRecord(
+                url=pdf_url,
+                source_id=source_id,
+                depth=1,
+                title=title,
+                content_type="pdf"
+            )
+            page_data = {"content": pdf_res["text"], "title": title, "content_preview": pdf_res["text"][:500]}
+            eval_res = await evaluator.evaluate(cand_record, page_data)
 
+            if eval_res.classification == RelevanceClassificationEnum.RELEVANT:
+                structured_txt = format_to_structured_txt(
+                    source_id=source_id,
+                    jurisdiction=jurisdiction_str,
+                    url=pdf_url,
+                    page_title=title,
+                    crawled_at=crawled_at,
+                    clean_text=pdf_res["text"]
+                )
+                pdf_documents.append({
+                    "url": pdf_url,
+                    "depth": 1,
+                    "type": "pdf",
+                    "page_count": pdf_res["page_count"],
+                    "content": structured_txt,
+                    "content_hash": calculate_sha256(structured_txt)
+                })
+            elif eval_res.classification in (RelevanceClassificationEnum.NOT_RELEVANT, RelevanceClassificationEnum.UNCERTAIN):
+                logger.info(f"PDF {pdf_url} classified as {eval_res.classification.value}. Adding to review records.")
+                pdf_review_records.append({
+                    "url": pdf_url,
+                    "classification": eval_res.classification.value,
+                    "reason": eval_res.reason
+                })
+
+    return pdf_documents, pdf_review_records
 
 
 def _build_response_payload(
     source_id: str,
     target_url: str,
     scraped_documents: List[Dict[str, Any]],
+    review_records: List[Dict[str, Any]],
     source_config: Dict[str, Any],
     crawled_at: str
 ) -> Dict[str, Any]:
@@ -241,6 +367,7 @@ def _build_response_payload(
         "total_pdfs_parsed": sum(1 for d in scraped_documents if d["type"] == "pdf"),
         "combined_content_hash": combined_hash,
         "documents": scraped_documents,
+        "review_records": review_records,
         "metadata": {
             "source_id": source_id,
             "jurisdiction": source_config.get("jurisdiction"),
@@ -271,6 +398,9 @@ async def execute_source_crawl(source_config: Dict[str, Any]) -> Dict[str, Any]:
     crawl_settings = source_config.get("crawl", {})
     allowed_domains = source_info.get("allowed_domains", [])
 
+    jurisdiction_data = source_config.get("jurisdiction", {})
+    jurisdiction_str = jurisdiction_data.get("state") if isinstance(jurisdiction_data, dict) else str(jurisdiction_data)
+
     max_depth = int(crawl_settings.get("max_depth", 1))
     follow_links = bool(crawl_settings.get("follow_links", True))
     include_pdf = bool(crawl_settings.get("include_pdf", True))
@@ -283,22 +413,24 @@ async def execute_source_crawl(source_config: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"No valid seed or base URL found for source '{source_id}'")
         raise ValueError(f"No valid seed or base URL found for source '{source_id}'")
 
-    target_url = raw_target_url
-
+    target_url = normalize_url(raw_target_url)
     crawled_at = datetime.now(timezone.utc).isoformat()
     logger.info(f"Starting crawl for {source_id} at {target_url} (Max Depth: {max_depth})")
 
     # Step 1: Build Crawl Config
     crawl_config = _build_crawler_config(crawl_settings)
 
-    # Step 2: Crawl HTML pages
-    html_docs, pdf_urls, success, error_msg = await _run_in_proactor_if_needed(
+    # Step 2: Crawl HTML pages (expanding only RELEVANT branches)
+    html_docs, pdf_urls, review_records, success, error_msg = await _run_in_proactor_if_needed(
         _crawl_html_pages,
         target_url=target_url,
         max_depth=max_depth,
         follow_links=follow_links,
         allowed_domains=allowed_domains,
         source_name=source_info.get("name", "Regulatory Document"),
+        source_id=source_id,
+        jurisdiction_str=jurisdiction_str,
+        crawled_at=crawled_at,
         crawl_config=crawl_config,
         crawl_settings=crawl_settings
     )
@@ -312,14 +444,22 @@ async def execute_source_crawl(source_config: Dict[str, Any]) -> Dict[str, Any]:
             "total_documents_scraped": 0,
             "total_html_pages": 0,
             "total_pdfs_parsed": 0,
+            "review_records": [],
             "saved_directory": "",
             "timestamps": {"last_crawled_at": crawled_at}
         }
 
-    # Step 3: Process PDFs if enabled
+    # Step 3: Process & evaluate relevance of discovered PDFs
     pdf_docs = []
     if include_pdf and pdf_urls:
-        pdf_docs = await _process_discovered_pdfs(pdf_urls, request_timeout)
+        pdf_docs, pdf_review_records = await _process_discovered_pdfs(
+            pdf_urls=pdf_urls,
+            request_timeout=request_timeout,
+            source_id=source_id,
+            jurisdiction_str=jurisdiction_str,
+            crawled_at=crawled_at
+        )
+        review_records.extend(pdf_review_records)
 
     # Step 4: Combine all documents & build final output
     all_documents = html_docs + pdf_docs
@@ -327,6 +467,8 @@ async def execute_source_crawl(source_config: Dict[str, Any]) -> Dict[str, Any]:
         source_id=source_id,
         target_url=target_url,
         scraped_documents=all_documents,
+        review_records=review_records,
         source_config=source_config,
         crawled_at=crawled_at
     )
+

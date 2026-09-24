@@ -1,109 +1,111 @@
 [
   {
-"source_id": "US-AL-ADPH",
-"jurisdiction": {
-"country": "US",
-"state": "Alabama",
-"code": "US-AL",
-"level": "state"
-},
-"source": {
-"name": "Alabama Department of Public Health",
-"type": "administrative_regulations",
-"authority": "Alabama Department of Public Health",
-"official": true,
-"relevance": "Official Alabama public health laws, health facility standards, and medical regulations.",
-"base_url": "https://www.alabamapublichealth.gov/",
-"seed_urls": [
-"https://www.alabamapublichealth.gov/about/regulations.html"
-],
-"allowed_domains": [
-"alabamapublichealth.gov",
-"adph.org"
-]
-},
-"crawl": {
-"enabled": true,
-"engine": "crawl4ai",
-"max_depth": 3,
-"follow_links": true,
-"include_pdf": true,
-"allowed_content_types": [
-"text/html",
-"application/pdf"
-],
-"respect_robots_txt": true,
-"request_timeout_seconds": 30,
-"max_retries": 3
-},
-"monitoring": {
-"frequency": "monthly",
-"change_detection": true,
-"hash_algorithm": "sha256"
-},
-"status": {
-"active": true,
-"accessibility": "accessible",
-"validation": "verified"
-},
-"timestamps": {
-"created_at": null,
-"updated_at": null,
-"last_crawled_at": null,
-"last_success_at": null
-}
-},
-{
-"source_id": "US-CA-OAG-MP",
-"jurisdiction": {
-"country": "US",
-"state": "California",
-"code": "US-CA",
-"level": "state"
-},
-"source": {
-"name": "California Office of the Attorney General Medical Privacy",
-"type": "administrative_regulations",
-"authority": "California Office of the Attorney General",
-"official": true,
-"relevance": "Official California medical privacy laws, consumer information, and healthcare data security regulations.",
-"base_url": "https://oag.ca.gov/",
-"seed_urls": [
-"https://oag.ca.gov/privacy/medical-privacy"
-],
-"allowed_domains": [
-"oag.ca.gov"
-]
-},
-"crawl": {
-"enabled": true,
-"engine": "crawl4ai",
-"max_depth": 3,
-"follow_links": true,
-"include_pdf": true,
-"allowed_content_types": [
-"text/html",
-"application/pdf"
-],
-"respect_robots_txt": true,
-"request_timeout_seconds": 30,
-"max_retries": 3
-},
-"monitoring": {
-"frequency": "monthly",
-"change_detection": true,
-"hash_algorithm": "sha256"
-},
-"status": {
-"active": true,
-"accessibility": "accessible",
-"validation": "verified"
-},
-"timestamps": {
-"created_at": null,
-"updated_at": null,
-"last_crawled_at": null,
-"last_success_at": null
-}
-}
+    "source_id": "US-AL-ADPH",
+    "jurisdiction": {
+      "country": "US",
+      "state": "Alabama",
+      "code": "US-AL",
+      "level": "state"
+    },
+    "source": {
+      "name": "Alabama Department of Public Health",
+      "type": "administrative_regulations",
+      "authority": "Alabama Department of Public Health",
+      "official": true,
+      "relevance": "Official Alabama public health laws, health facility standards, and medical regulations.",
+      "base_url": "https://www.alabamapublichealth.gov/",
+      "seed_urls": [
+        "https://www.alabamapublichealth.gov/about/regulations.html"
+      ],
+      "allowed_domains": [
+        "alabamapublichealth.gov",
+        "legislature.state.al.us",
+        "state.al.us",
+        "adph.org"
+      ]
+    },
+    "crawl": {
+      "enabled": true,
+      "engine": "crawl4ai",
+      "max_depth": 3,
+      "follow_links": true,
+      "include_pdf": true,
+      "allowed_content_types": [
+        "text/html",
+        "application/pdf"
+      ],
+      "respect_robots_txt": true,
+      "request_timeout_seconds": 30,
+      "max_retries": 3
+    },
+    "monitoring": {
+      "frequency": "monthly",
+      "change_detection": true,
+      "hash_algorithm": "sha256"
+    },
+    "status": {
+      "active": true,
+      "accessibility": "accessible",
+      "validation": "verified"
+    },
+    "timestamps": {
+      "created_at": null,
+      "updated_at": null,
+      "last_crawled_at": null,
+      "last_success_at": null
+    }
+  },
+  {
+    "source_id": "US-CA-OAG-MP",
+    "jurisdiction": {
+      "country": "US",
+      "state": "California",
+      "code": "US-CA",
+      "level": "state"
+    },
+    "source": {
+      "name": "California Office of the Attorney General Medical Privacy",
+      "type": "administrative_regulations",
+      "authority": "California Office of the Attorney General",
+      "official": true,
+      "relevance": "Official California medical privacy laws, consumer information, and healthcare data security regulations.",
+      "base_url": "https://oag.ca.gov/",
+      "seed_urls": [
+        "https://oag.ca.gov/privacy/medical-privacy"
+      ],
+      "allowed_domains": [
+        "oag.ca.gov"
+      ]
+    },
+    "crawl": {
+      "enabled": true,
+      "engine": "crawl4ai",
+      "max_depth": 3,
+      "follow_links": true,
+      "include_pdf": true,
+      "allowed_content_types": [
+        "text/html",
+        "application/pdf"
+      ],
+      "respect_robots_txt": true,
+      "request_timeout_seconds": 30,
+      "max_retries": 3
+    },
+    "monitoring": {
+      "frequency": "monthly",
+      "change_detection": true,
+      "hash_algorithm": "sha256"
+    },
+    "status": {
+      "active": true,
+      "accessibility": "accessible",
+      "validation": "verified"
+    },
+    "timestamps": {
+      "created_at": null,
+      "updated_at": null,
+      "last_crawled_at": null,
+      "last_success_at": null
+    }
+  }
 ]

@@ -1,0 +1,29 @@
+{
+  "source_id": "US-CA-OAG-MP",
+  "timestamp": "20260924_171238",
+  "total_discovered": 1,
+  "candidates": [
+    {
+      "url": "https://oag.ca.gov/privacy/medical-privacy",
+      "source_id": "US-CA-OAG-MP",
+      "jurisdiction": {
+        "country": "US",
+        "state": "California",
+        "code": "US-CA",
+        "level": "state"
+      },
+      "depth": 1,
+      "parent_url": null,
+      "title": "Government Information Page",
+      "content_type": "html",
+      "content_preview": "General public notice.",
+      "discovery_method": "seed_url",
+      "status": "UNCERTAIN",
+      "classification": "UNCERTAIN",
+      "confidence": 0.5,
+      "reason": "Insufficent specific context to determine TLD health information privacy relevance",
+      "matched_topics": []
+    }
+  ],
+  "failures": []
+}

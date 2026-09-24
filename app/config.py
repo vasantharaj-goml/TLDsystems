@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     # Path settings
     CONFIG_PATH: Path = BASE_DIR / "config" / "source_repository.json"
     STORAGE_DIR: Path = BASE_DIR / "storage" / "extracted_content"
+    DISCOVERY_STORAGE_DIR: Path = BASE_DIR / "storage" / "discovered_candidates"
+    APPROVED_STORAGE_DIR: Path = BASE_DIR / "storage" / "approved_sources"
+    
+    # Grok / xAI LLM Settings
+    GROK_API_KEY: str = ""
+    GROK_MODEL: str = "grok-beta"
+    GROK_API_BASE: str = "https://api.x.ai/v1"
+    GROK_REQUEST_TIMEOUT: int = 30
     
     # CORS settings
     ALLOWED_ORIGINS: Union[List[str], str] = ["*"]
@@ -34,4 +42,4 @@ class Settings(BaseSettings):
     )
 
 
-settings = Settings()
+settings = Settings()

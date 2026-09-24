@@ -1,0 +1,34 @@
+{
+  "source_id": "US-CA-OAG-MP",
+  "timestamp": "20260924_125218",
+  "total_discovered": 1,
+  "candidates": [
+    {
+      "url": "https://oag.ca.gov/privacy/medical-privacy",
+      "source_id": "US-CA-OAG-MP",
+      "jurisdiction": {
+        "country": "US",
+        "state": "California",
+        "code": "US-CA",
+        "level": "state"
+      },
+      "depth": 1,
+      "parent_url": null,
+      "title": "Medical Privacy | State of California - Department of Justice - Office of the Attorney General",
+      "content_type": "html",
+      "content_preview": "Medical Privacy | State of California - Department of Justice - Office of the Attorney General Skip to main content --> --> Medical Privacy Home Privacy Medical Privacy State and federal laws give you rights regarding your medical records, including rights to view those records and to ask to have them corrected. The law requires most doctors, HMOs, pharmacists, and other healthcare providers to give you a notice which describes the professional s practices and your rights. The notice should also",
+      "discovery_method": "seed_url",
+      "status": "RELEVANT_CANDIDATE",
+      "classification": "RELEVANT",
+      "confidence": 0.95,
+      "reason": "Content matches TLD health privacy scope topics: medical record, medical records",
+      "matched_topics": [
+        "medical record",
+        "medical records",
+        "patient privacy",
+        "health information privacy"
+      ]
+    }
+  ],
+  "failures": []
+}
