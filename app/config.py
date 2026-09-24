@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import List
+from typing import List, Union
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,7 +24,8 @@ class Settings(BaseSettings):
     STORAGE_DIR: Path = BASE_DIR / "storage" / "extracted_content"
     
     # CORS settings
-    ALLOWED_ORIGINS: List[str] = ["*"]
+    ALLOWED_ORIGINS: Union[List[str], str] = ["*"]
+
     
     model_config = SettingsConfigDict(
         env_file=".env", 
