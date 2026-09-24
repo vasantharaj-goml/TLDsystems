@@ -1,165 +1,109 @@
 [
   {
-    "source_id": "us-tx-health-safety-code",
-    "jurisdiction": {
-      "country": "US",
-      "state": "Texas",
-      "code": "US-TX",
-      "level": "state"
-    },
-    "source": {
-      "name": "Texas Constitution and Statutes",
-      "type": "state_statutes",
-      "authority": "Texas Legislature",
-      "official": true,
-      "relevance": "Official Texas statutory source for monitoring state healthcare privacy laws.",
-      "base_url": "https://statutes.capitol.texas.gov/",
-      "seed_urls": [
-        "https://statutes.capitol.texas.gov/?tab=1&code=HS&chapter=HS.181&artSec="
-      ],
-      "allowed_domains": [
-        "statutes.capitol.texas.gov"
-      ]
-    },
-    "crawl": {
-      "enabled": true,
-      "engine": "crawl4ai",
-      "max_depth": 1,
-      "follow_links": false,
-      "include_pdf": true,
-      "allowed_content_types": [
-        "text/html",
-        "application/pdf"
-      ],
-      "respect_robots_txt": true,
-      "request_timeout_seconds": 30,
-      "max_retries": 3,
-      "delay_before_return_html": 6.0,
-      "process_iframes": true,
-      "target_css_selector": "#docViewer, app-doc-viewer, main"
-    },
-    "monitoring": {
-      "frequency": "monthly",
-      "change_detection": true,
-      "hash_algorithm": "sha256"
-    },
-    "status": {
-      "active": true,
-      "accessibility": "accessible",
-      "validation": "verified"
-    },
-    "timestamps": {
-      "created_at": "2026-09-23T00:00:00Z",
-      "updated_at": "2026-09-23T00:00:00Z",
-      "last_crawled_at": null,
-      "last_success_at": null
-    }
-  },
-  {
-    "source_id": "us-wa-revised-code-title-70",
-    "jurisdiction": {
-      "country": "US",
-      "state": "Washington",
-      "code": "US-WA",
-      "level": "state"
-    },
-    "source": {
-      "name": "Revised Code of Washington (RCW) - Chapter 70.02",
-      "type": "state_statutes",
-      "authority": "Washington State Legislature",
-      "official": true,
-      "relevance": "Official Washington state statutory source for health care information access and disclosure laws.",
-      "base_url": "https://app.leg.wa.gov/RCW/",
-      "seed_urls": [
-        "https://app.leg.wa.gov/RCW/default.aspx?cite=70.02&full=true"
-      ],
-      "allowed_domains": [
-        "app.leg.wa.gov"
-      ]
-    },
-    "crawl": {
-      "enabled": true,
-      "engine": "crawl4ai",
-      "max_depth": 1,
-      "follow_links": false,
-      "include_pdf": true,
-      "allowed_content_types": [
-        "text/html",
-        "application/pdf"
-      ],
-      "respect_robots_txt": true,
-      "request_timeout_seconds": 30,
-      "max_retries": 3
-    },
-    "monitoring": {
-      "frequency": "monthly",
-      "change_detection": true,
-      "hash_algorithm": "sha256"
-    },
-    "status": {
-      "active": true,
-      "accessibility": "accessible",
-      "validation": "verified"
-    },
-    "timestamps": {
-      "created_at": "2026-09-23T00:00:00Z",
-      "updated_at": "2026-09-23T00:00:00Z",
-      "last_crawled_at": null,
-      "last_success_at": null
-    }
-  },
-  {
-    "source_id": "us-mo-code-of-state-regulations-title-19",
-    "jurisdiction": {
-      "country": "US",
-      "state": "Missouri",
-      "code": "US-MO",
-      "level": "state"
-    },
-    "source": {
-      "name": "Missouri Code of State Regulations - Title 19: Department of Health and Senior Services",
-      "type": "state_regulations",
-      "authority": "Missouri Secretary of State",
-      "official": true,
-      "relevance": "Official Missouri regulatory source for monitoring healthcare, public health, health facility, licensing, long-term care, and related health regulations.",
-      "base_url": "https://www.sos.mo.gov/adrules/csr/current/19csr/",
-      "seed_urls": [
-        "https://www.sos.mo.gov/adrules/csr/current/19csr/19csr"
-      ],
-      "allowed_domains": [
-        "www.sos.mo.gov",
-        "sos.mo.gov"
-      ]
-    },
-    "crawl": {
-      "enabled": true,
-      "engine": "crawl4ai",
-      "max_depth": 2,
-      "follow_links": true,
-      "include_pdf": true,
-      "allowed_content_types": [
-        "text/html",
-        "application/pdf"
-      ],
-      "respect_robots_txt": true,
-      "request_timeout_seconds": 30,
-      "max_retries": 3
-    },
-    "monitoring": {
-      "frequency": "monthly",
-      "change_detection": true,
-      "hash_algorithm": "sha256"
-    },
-    "status": {
-      "active": true,
-      "accessibility": "accessible",
-      "validation": "verified"
-    },
-    "timestamps": {
-      "created_at": "2026-09-24T00:00:00Z",
-      "updated_at": "2026-09-24T00:00:00Z",
-      "last_crawled_at": null,
-      "last_success_at": null
-    }
-  }
+"source_id": "US-AL-ADPH",
+"jurisdiction": {
+"country": "US",
+"state": "Alabama",
+"code": "US-AL",
+"level": "state"
+},
+"source": {
+"name": "Alabama Department of Public Health",
+"type": "administrative_regulations",
+"authority": "Alabama Department of Public Health",
+"official": true,
+"relevance": "Official Alabama public health laws, health facility standards, and medical regulations.",
+"base_url": "https://www.alabamapublichealth.gov/",
+"seed_urls": [
+"https://www.alabamapublichealth.gov/about/regulations.html"
+],
+"allowed_domains": [
+"alabamapublichealth.gov",
+"adph.org"
+]
+},
+"crawl": {
+"enabled": true,
+"engine": "crawl4ai",
+"max_depth": 3,
+"follow_links": true,
+"include_pdf": true,
+"allowed_content_types": [
+"text/html",
+"application/pdf"
+],
+"respect_robots_txt": true,
+"request_timeout_seconds": 30,
+"max_retries": 3
+},
+"monitoring": {
+"frequency": "monthly",
+"change_detection": true,
+"hash_algorithm": "sha256"
+},
+"status": {
+"active": true,
+"accessibility": "accessible",
+"validation": "verified"
+},
+"timestamps": {
+"created_at": null,
+"updated_at": null,
+"last_crawled_at": null,
+"last_success_at": null
+}
+},
+{
+"source_id": "US-CA-OAG-MP",
+"jurisdiction": {
+"country": "US",
+"state": "California",
+"code": "US-CA",
+"level": "state"
+},
+"source": {
+"name": "California Office of the Attorney General Medical Privacy",
+"type": "administrative_regulations",
+"authority": "California Office of the Attorney General",
+"official": true,
+"relevance": "Official California medical privacy laws, consumer information, and healthcare data security regulations.",
+"base_url": "https://oag.ca.gov/",
+"seed_urls": [
+"https://oag.ca.gov/privacy/medical-privacy"
+],
+"allowed_domains": [
+"oag.ca.gov"
+]
+},
+"crawl": {
+"enabled": true,
+"engine": "crawl4ai",
+"max_depth": 3,
+"follow_links": true,
+"include_pdf": true,
+"allowed_content_types": [
+"text/html",
+"application/pdf"
+],
+"respect_robots_txt": true,
+"request_timeout_seconds": 30,
+"max_retries": 3
+},
+"monitoring": {
+"frequency": "monthly",
+"change_detection": true,
+"hash_algorithm": "sha256"
+},
+"status": {
+"active": true,
+"accessibility": "accessible",
+"validation": "verified"
+},
+"timestamps": {
+"created_at": null,
+"updated_at": null,
+"last_crawled_at": null,
+"last_success_at": null
+}
+}
 ]
